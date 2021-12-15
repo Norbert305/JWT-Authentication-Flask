@@ -7,12 +7,56 @@ from api.utils import generate_sitemap, APIException
 
 api = Blueprint('api', __name__)
 
+#First GET method
+@api.route('/user', methods=['GET'])
+def get_users():
 
-@api.route('/hello', methods=['POST', 'GET'])
-def handle_hello():
+    users_query = User.query.all()
+    all_users = list(map(lambda x: x.serialize(), users_query))
 
-    response_body = {
-        "message": "Hello! I'm a message that came from the backend, check the network tab on the google inspector and you will see the GET request"
-    }
+    return jsonify(
+        all_users
+    ), 200
 
-    return jsonify(response_body), 200
+#Get Specific User
+@api.route('/user/<id>', methods=['GET'])
+def get_specific_user(id):
+
+    user_query = User.query.get(id)
+
+    return jsonify(
+        user_query.serialize()
+    ), 200
+
+#Add New User
+@api.route('/user', methods=['POST'])
+def add_new_user():
+
+    body = request.get_json()
+
+    new_user = User(
+        full_name=body["full_name"], 
+        email=body["email"], 
+        password=body["password"]
+    )
+
+    db.session.add(new_user)
+    db.session.commit()
+
+    users_query = User.query.all()
+    all_users = list(map(lambda x: x.serialize(), users_query))
+    return jsonify(all_users), 200
+
+#User Login
+@api.route('/login', methods=['POST'])
+def user_login():
+
+    body = request.get_json()
+
+    user = User.query.filter_by(email = body["email"], password = body["password"]).first()
+
+    if user == None:
+        return "email or password is incorrect", 400
+    return jsonify(
+        user.serialize()
+    ), 200
